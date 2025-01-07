@@ -1,0 +1,292 @@
+    def survive(self): # For special cases where the snakes new objective is to not trap itself
+        input()
+        self.snake.BODY_COLOR = pg.Color(172, 174, 182)
+        self.snake.HEAD_COLOR = pg.Color(239, 218, 33)
+        if self.snake.body: self.body = list(map(lambda x: (x[0]//CUBE_DIM, x[1]//CUBE_DIM), self.snake.body))
+        print(self.body)
+
+        # Code is modified from cheat() but does the same thing, except it returns the number of spaces available instead of a boolean
+
+        if (self.x, self.y) != (self.snake.x // 60, self.snake.y // 60): # Debugger
+            print(f"{self.index}, {len(self.path)}")
+            input(f"NOT EVEN {(self.x, self.y)} SNAKE PIX {(self.snake.x // 60, self.snake.y // 60)}")
+
+
+        excepted_spaces = dict() # Any coords contained here have been checked before, to save CPU resources, it can instantly check this off
+        connected_units = dict()
+        numbered_visible_spaces = {-1: []}
+        possible_moves = {"up": (self.x, self.y-1), "down": (self.x, self.y+1), "left": (self.x-1, self.y), "right": (self.x+1, self.y)} # All possible moves for the snake
+        for direction, head in possible_moves.items():
+            excepted_spaces[direction] = set()
+            connected_units[direction] = True
+            visited = list() # Units already checked
+            awaited_units = list() # Units adjacent to visited units to be checked next
+
+
+            if head not in self.body and 0 <= head[0] <= COLUMNS-1 and 0 <= head[1] <= ROWS-1: # Checks if head isn't part of the body or off the grid, to save CPU resources
+
+                excepted = [i for i in excepted_spaces.values() if head in i and head not in self.body]
+                if excepted:
+                    numbered_visible_spaces[len(excepted[0])] += [direction] # numbered_visible_spaces[direction] = len(excepted[0]) Commented to give the randomness later on, so it doesnt have to chose where to go
+                    # input(excepted)
+                else:
+                    vacant_spaces = self.empty_spaces.copy() # Contains all empty spaces AFTER body movement has been simulated
+                    
+                    
+                    vacant_spaces.remove((head)) # Adds a head to simulate movement
+                    for unit in list(self.body)[:-1]: # Removes body but tail remains to simulate movement
+                        vacant_spaces.remove((unit))
+                    
+                    x, y = head
+                    if (x+1, y) in vacant_spaces and x+1 <= self.columns-1: # Right
+                        start_unit = (x+1, y)
+                        # print("R")
+                    elif (x-1, y) in vacant_spaces and x-1 >= 0: # Left
+                        start_unit = (x-1, y)
+                        # print("L")
+                    elif (x, y-1) in vacant_spaces and y-1 >= 0: # Up
+                        start_unit = (x, y-1)
+                        # print("U")
+                    elif (x, y+1) in vacant_spaces and y+1 <= self.rows-1: # Down
+                        start_unit = (x, y+1)
+                        # print("D")
+                    else:
+                        input(f"DEAD END {x, y}")
+
+
+                    visited.append(start_unit)
+                    awaited_units.append(start_unit)
+                    flag = True # Walrus operator not used
+                    while flag:
+                        adjacent_units = set()
+                        for x, y in awaited_units:
+                            reachable_units = set() # Contains units reachable by the current unit
+    
+                            if (x+1, y) in vacant_spaces and (x+1, y) not in visited and x+1 <= self.columns-1: # Right
+                                adjacent_units.add((x+1, y))
+                                # print("R")
+
+                            if (x-1, y) in vacant_spaces and (x-1, y) not in visited and x-1 >= 0: # Left
+                                adjacent_units.add((x-1, y))
+                                # print("L")
+                            if (x, y-1) in vacant_spaces and (x, y-1) not in visited and y-1 >= 0: # Up
+                                adjacent_units.add((x, y-1))
+                                # print("U")
+                            if (x, y+1) in vacant_spaces and (x, y+1) not in visited and y+1 <= self.rows-1: # Down
+                                adjacent_units.add((x, y+1))
+                                # print("D")
+
+                            # Checks for second to last unit because movement is simulated ( If length is 1 )
+                            # self.body[-2] is needed since the tail and head are able to have a one way in / out passage, and there is movement temp
+                            # Checks if a square is a deadend
+                            if len(self.body) >= 2 and (x, y) not in self.whitelist:
+                                if (x+1, y) in vacant_spaces or (x+1, y) == self.body[-2] or (x+1, y) == head and x+1 <= self.columns-1: # Right
+                                    reachable_units.add((x+1, y))
+
+                                if (x-1, y) in vacant_spaces or (x-1, y) == self.body[-2] or (x-1, y) == head and x-1 >= 0: # Left
+                                    reachable_units.add((x-1, y))
+
+                                if (x, y-1) in vacant_spaces or (x, y-1) == self.body[-2] or (x, y-1) == head and y-1 >= 0: # Up
+                                    reachable_units.add((x, y-1))
+
+                                if (x, y+1) in vacant_spaces or (x, y+1) == self.body[-2] or (x, y+1) == head and y+1 <= self.rows-1: # Down
+                                    reachable_units.add((x, y+1))
+
+                                if len(reachable_units) < 2: # Checks if square is a deadend
+                                    print(f"BAD SPOT {(x, y)}")
+                                    # print(f"'{len(reachable_units)}' reachable_units AT {reachable_units}\nLooking at {head} area\n HEAD IS CURRENTLY AT {(self.x, self.y)}\nERROR AT {(x, y)}\n'{direction}' direction is not availible")
+                                    connected_units[direction] = False
+                                    flag = False
+                                    break
+                            else: print(self.whitelist, "WHITELIST", (x, y))
+                        
+
+                        # if not len(adjacent_units) and flag: # Adj units == 0 or not possible adj units left
+                        #     if len(visited) == len(vacant_spaces): # Passed test, snake can go on it's merry way
+                        #         connected_units[direction] = True
+                        #     else:
+                        #         connected_units[direction] = False
+                        #         print(f"Failed cutoff test {direction}")
+                        #         # print(f"v: {len(visited)}, vs: {len(vacant_spaces)}")
+                        #         # print(list(set(vacant_spaces)-set(visited)))
+                        #         # input(f"{direction} + {coords}")
+                        #     break
+
+                        # else:
+                            # visited += adjacent_units
+                            # awaited_units = adjacent_units
+                    
+
+                        if not len(adjacent_units) and flag: # Adj units == 0 or not possible adj units left
+                            excepted_spaces[direction] = set(visited)
+                            # input(f"SPACES {len(visited)} COMPARED {len(vacant_spaces)}")
+                            numbered_visible_spaces[len(visited)] = [direction]
+                            if len(visited) == len(vacant_spaces): # Passed test, snake can go on it's merry way
+                                connected_units[direction] = True
+                                input("PASSED CUTOFF TEST, CONFIRM?")
+                            else:
+                                connected_units[direction] = False
+                                input(f"Failed cutoff test {direction}")
+                                # print(f"v: {len(visited)}, vs: {len(vacant_spaces)}")
+                                # print(list(set(vacant_spaces)-set(visited)))
+                                # input(f"{direction} + {coords}")
+                            break
+
+                        else:
+                            visited += adjacent_units
+                            awaited_units = adjacent_units
+
+
+            else:
+                connected_units[direction] = False
+                numbered_visible_spaces[-1] += [direction]
+
+
+        print("\nCHECKING HAMILTONICTY\n")
+        input(connected_units)
+        if len([i for i in self.check_hamiltonicity().values() if i]):
+            print(self.check_hamiltonicity().values())
+            input(([i for i in connected_units.values() if i]))
+            self.snake.BODY_COLOR = pg.Color(0, 255, 0) # Green
+            self.snake.HEAD_COLOR = pg.Color(255, 145, 0) # Orange
+            self.survival = False
+            self.whitelist = list()
+        # input(connected_units)
+        # input(f"{numbered_visible_spaces}, {(self.x, self.y)}")
+
+        best_move = max(numbered_visible_spaces.keys())
+
+        fx, fy = (fruit.x//CUBE_DIM, fruit.y//CUBE_DIM)
+        sx, sy = (snake.x//CUBE_DIM, snake.y//CUBE_DIM)
+        # Grab the path from the snake to the apple directly
+        findex = self.path.index((fx, fy))
+        sindex = self.path.index((sx, sy))
+        fruit_collide = (self.snake.x, self.snake.y) == (self.fruit.x, self.fruit.y)
+        if not fruit_collide and self.index+1 != len(self.path):
+            if findex + 1 > sindex:
+                pathtofruit = path[sindex:findex+1] # Path directely from snake to fruit
+                self.backwards = False
+                print("GOING DIRECTLY TO FRUIT")
+                try:
+                    pathtofruit.pop(1)
+                except:
+                    print(pathtofruit)
+                    input((sindex, findex))
+            else:
+                if len(path[sindex:] + path[:findex+1]) > len(path[findex:sindex+1]):
+                    pathtofruit = path[findex:sindex+1]
+                    pathtofruit.reverse()
+                    self.backwards = True
+                    print("GOING FROM (0, 0) TO THE FRUIT")
+                else:
+                    print("GOING BACKWARDS SNAKE TO FRUI")
+                    self.backwards = False
+                    pathtofruit = path[sindex:] + path[:findex+1] # Path to (0, 0) from the snake and (0, 0) to the fruit
+
+            
+            for direction in numbered_visible_spaces[best_move]:
+                if direction == "down": x, y = (self.x, self.y+1)
+                elif direction == "up": x, y = (self.x, self.y-1)
+                elif direction == "left": x, y = (self.x-1, self.y)
+                elif direction == "right": x, y = (self.x+1, self.y)
+                if (x, y) in pathtofruit and (x, y) not in self.body and 0 <= x <= COLUMNS-1 and 0 <= y <= ROWS-1:
+                    # input(f"{(x, y)} NEW DIR")
+                    self.snake.change_dir(direction)
+                    self.last_direction = direction
+                    self.x, self.y = x, y
+                    self.index = self.path.index((self.x, self.y))
+                    return
+
+
+            direction = choice(numbered_visible_spaces[best_move])
+            if direction == "down": self.x, self.y = (self.x, self.y+1)
+            elif direction == "up": self.x, self.y = (self.x, self.y-1)
+            elif direction == "left": self.x, self.y = (self.x-1, self.y)
+            elif direction == "right": self.x, self.y = (self.x+1, self.y)
+            # input((self.x, self.y))
+            snake.change_dir(direction)
+            self.last_direction = direction
+            self.index = self.path.index((self.x, self.y))
+        else:
+            # if self.index+1 == len(self.path) and self.path[0] in self.body: input(f"SPECIAL CASE {self.index+1 == len(self.path) and self.path[0] not in self.body}, {self.index}, {(self.x, self.y)}") # Special case, ind 0 to last ind
+            #  Special case when list ends and is stuck at (0, 1)
+            if self.index+1 == len(self.path) and self.path[0] not in self.body:
+                print("RESETTING TO (0, 0)")
+                snake.change_dir("up")
+                self.last_direction = "up"
+                print((self.x, self.y))
+                self.x, self.y = (self.x, self.y-1)
+                print((self.x, self.y, snake.direction))
+                self.index = 0
+
+            elif (self.x, self.y) == (0, 0) and self.last_direction != "up": # Special case where snake goes from index 0 to last index
+                snake.change_dir("down")
+                self.index = len(self.path) - 1
+                self.x, self.y = (self.x, self.y+1)
+                self.last_direction = "down"
+
+            else: # When above elif runs, snake must go backwards on the hamiltonian cycle
+                if self.path[self.index-1] == (self.x, self.y+1) and self.last_direction != "up" and (self.x, self.y+1) not in self.body and connected_units["down"]: # Down
+                    snake.change_dir("down")
+                    self.index -= 1
+                    self.x, self.y = (self.x, self.y+1)
+                    self.last_direction = "down"
+                elif self.path[self.index-1] == (self.x, self.y-1) and self.last_direction != "down" and (self.x, self.y-1) not in self.body and connected_units["up"]: # Up
+                    snake.change_dir("up")
+                    self.index -= 1
+                    self.x, self.y = (self.x, self.y-1)
+                    self.last_direction = "up"
+                elif self.path[self.index-1] == (self.x-1, self.y) and self.last_direction != "right" and (self.x-1, self.y) not in self.body and connected_units["left"]: # Left
+                    snake.change_dir("left")
+                    self.index -= 1
+                    self.x, self.y = (self.x-1, self.y)
+                    self.last_direction = "left"
+                elif self.path[self.index-1] == (self.x+1, self.y) and self.last_direction != "left" and (self.x+1, self.y) not in self.body and connected_units["right"]: # Right
+                    snake.change_dir("right")
+                    self.index -= 1
+                    self.x, self.y = (self.x+1, self.y)
+                    self.last_direction = "right"
+                else:
+                    if self.last_direction != "up" and (self.x, self.y+1) not in self.body and connected_units["down"]: # Down
+                        snake.change_dir("down")
+                        self.x, self.y = (self.x, self.y+1)
+                        self.index = self.path.index((self.x, self.y))
+                        self.last_direction = "down"
+                    elif self.last_direction != "down" and (self.x, self.y-1) not in self.body and connected_units["up"]: # Up
+                        snake.change_dir("up")
+                        self.x, self.y = (self.x, self.y-1)
+                        self.index = self.path.index((self.x, self.y))
+                        self.last_direction = "up"
+                    elif self.last_direction != "right" and (self.x-1, self.y) not in self.body and connected_units["left"]: # Left
+                        snake.change_dir("left")
+                        self.x, self.y = (self.x-1, self.y)
+                        self.index = self.path.index((self.x, self.y))
+                        self.last_direction = "left"
+                    elif self.last_direction != "left" and (self.x+1, self.y) not in self.body and connected_units["right"]: # Right
+                        snake.change_dir("right")
+                        self.x, self.y = (self.x+1, self.y)
+                        self.index = self.path.index((self.x, self.y))
+                        self.last_direction = "right"
+        # input()
+
+
+        # self.last_direction = list(numbered_visible_spaces.keys())[list(numbered_visible_spaces.values()).index(best_move)] # Gets key from value
+        # print(f"BEST MOVE {best_move}, DATA: {numbered_visible_spaces}, {(self.x, self.y)}")f.y)
+        # snake.change_dir(self.last_direction)
+        # self.index = self.path.index((self.x, self.y)) # Moves index so it doesn't follow its default path'
+        if not self.whitelist:
+            if (self.x+1, self.y) not in self.body and x+1 <= self.columns-1: # Right
+                self.whitelist.append((self.x+1, self.y))
+            if (self.x-1, self.y) not in self.body and x-1 >= 0: # Left
+                self.whitelist.append((self.x-1, self.y))
+            if (self.x, self.y-1) not in self.body and y-1 >= 0: # Up
+                self.whitelist.append((self.x, self.y-1))
+            if (self.x, self.y+1) not in self.body  and y+1 <= self.rows-1: # Down
+                self.whitelist.append((self.x, self.y+1))
+            input(f"WHITELIST: {self.whitelist}")
+
+
+
+
+
+

@@ -1,0 +1,40 @@
+                # Head Special Case
+                x, y = (head)
+
+                head_adjacent_units = set()
+                head_illegal_moves = set()
+                if (x+1, y) in vacant_spaces and x+1 <= self.columns-1: # Right
+                    head_adjacent_units.add((x+1, y))
+                    # print("R")
+                if (x-1, y) in vacant_spaces and x-1 >= 0: # Left
+                    head_adjacent_units.add((x-1, y))
+                    # print("L")
+                if (x, y-1) in vacant_spaces and y-1 >= 0: # Up
+                    head_adjacent_units.add((x, y-1))
+                    # print("U")
+                if (x, y+1) in vacant_spaces and y+1 <= self.rows-1: # Down
+                    head_adjacent_units.add((x, y+1))
+                    # print("D")
+        
+                for hx, hy in head_adjacent_units:
+                    head_reachable_units = set()
+                    if (hx+1, hy) in vacant_spaces and hx+1 <= self.columns-1: # Right
+                        head_reachable_units.add((hx+1, hy))
+
+                    if (hx-1, hy) in vacant_spaces and hx-1 >= 0: # Left
+                        head_reachable_units.add((hx-1, hy))
+
+                    if (hx, hy-1) in vacant_spaces and hy-1 >= 0: # Up
+                        head_reachable_units.add((hx, hy-1))
+
+                    if (hx, hy+1) in vacant_spaces and hy+1 <= self.rows-1: # Down
+                        head_reachable_units.add((hx, hy+1))
+                    
+                    if len(head_reachable_units) == 1:
+                        head_illegal_moves.add(f"{(hx, hy)}, EXTRA: {head_reachable_units}")
+
+                if len(head_illegal_moves) > 1:
+                    print(f"ILLEGAL MOVE: {len(head_illegal_moves)} {head_illegal_moves} AT {head}, CURRENTLY AT {(self.x, self.y)} DIRECTION {direction}, SNAKE {(self.snake.x // 60, self.snake.y // 60)}")
+                    head_special_cnt += 1
+                    connected_units[direction] = False
+                    flag = False

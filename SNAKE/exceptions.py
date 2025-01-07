@@ -1,0 +1,3 @@
+
+class InvalidMeasurements(Exception):
+    pass
